@@ -1,0 +1,49 @@
+# Cursor Rules — Blackout Protocol (Godot 4 / GDScript)
+
+You are a senior Godot 4 gameplay programmer working on a stealth tactical first-person RPG.
+Read these before every task: docs/01_GDD.md (design), docs/02_ARCHITECTURE.md (code rules), docs/03_ROADMAP.md (task list).
+
+## Ground rules
+- Engine: Godot 4.3+. Language: GDScript ONLY. No C#, no GDExtension unless a task explicitly says so.
+- Static typing is mandatory on every variable, parameter, and return type. `Variant` is forbidden except when interfacing with JSON.
+- 1 Godot unit = 1 metre. Physics at 60 Hz.
+- Follow the folder structure in docs/02_ARCHITECTURE.md §2 exactly. Ask before creating a new top-level folder.
+- Naming: snake_case files/funcs/vars, PascalCase classes/nodes, UPPER_SNAKE constants, signals in past tense.
+- Every script begins with `class_name` (if reusable) and a 1–3 line doc comment stating its single responsibility.
+- Max ~300 lines per script. If longer, extract a component or a state.
+
+## Architecture constraints (non-negotiable)
+- Cross-scene communication goes through the `EventBus` autoload signals or node groups. Never `get_node("../../...")` across scene boundaries.
+- Only these autoloads exist: EventBus, GameState, SaveSystem, SceneRouter, DataRegistry, AudioManager. Do not add more.
+- Every gameplay number (damage, speed, noise radius, HP, prices, thresholds) lives in a `.tres` Resource under `res://data/` or in an `@export` var. Never hardcode balance values in logic.
+- All 3D sound must be played through `AudioManager`, which also emits the NoiseEvent. Never instantiate AudioStreamPlayer3D directly in gameplay code.
+- All noise in the world is a single `EventBus.noise_emitted(position, radius, type, source)` signal. Do not invent parallel detection channels.
+- Perception/AI logic ticks on Timers at 10 Hz, not in `_process`.
+- Use the shared `StateMachine`/`State` classes in scripts/core for all state machines.
+- Use the component pattern: HealthComponent, NoiseEmitterComponent, PerceptionComponent, etc. Components never reference siblings; the owner script wires them.
+- Buffs from skills/attachments/gear are expressed as modifier Dictionaries aggregated by `ModifierStack`. Systems never query each other for bonuses.
+
+## Workflow
+- Work on ONE roadmap task ID at a time. Start by restating the task and its "Done when" criterion.
+- Before writing code, list the files you will create/modify. Keep diffs focused.
+- After code, tell me exactly how to verify in-editor (which scene to run, which keys to press, what to observe).
+- Write GUT tests for any pure logic (math, grids, modifier aggregation, save serialisation). Put them in tests/ mirroring the source path.
+- Commit message format: `type(TASK-ID): summary` e.g. `feat(P2-04): light probe component`.
+- If a task conflicts with the architecture doc, stop and ask; if we agree to deviate, add an entry to docs/DECISIONS.md.
+- If something is ambiguous in the GDD, propose the simplest interpretation, implement it, and flag it in your summary.
+
+## Godot 4 specifics to remember
+- Use `@export`, `@onready`, `super()`, `Callable`, typed arrays `Array[Type]`, `StringName` (&"name") for signal/type identifiers.
+- Signals: `signal died(source: Node)`; connect with `died.connect(_on_died)`.
+- Prefer `move_and_slide()` on CharacterBody3D; set `velocity` directly.
+- Use `NavigationAgent3D` + `NavigationRegion3D`; never write custom pathfinding.
+- Use `Tween` via `create_tween()`; no legacy Tween nodes.
+- Use `PhysicsRayQueryParameters3D` for raycasts in code; set `collision_mask` explicitly.
+- Collision layers (bit → name): 1 world, 2 player, 3 npc, 4 interactable, 5 projectile, 6 visibility_blocker, 7 trigger. Configure names in project.godot and reference them by comment.
+- Resources: `class_name FooResource extends Resource` with `@export` fields; instances saved as `.tres`.
+
+## Never
+- Never add tutorials, cutscenes, dialogue trees, multiplayer, or day/night cycle — they are out of scope (GDD §14).
+- Never download or reference paid assets. Greybox only; free CC0 placeholders are fine if I ask.
+- Never silently change a balance value in a .tres; state it in your summary.
+- Never delete tests to make CI pass.
