@@ -1,0 +1,15 @@
+# Godot 4
+.godot/
+*.import
+export_presets.cfg
+export/
+build/
+*.translation
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/settings.json
+# Large binaries live outside git (see docs/02_ARCHITECTURE.md)
+*.blend1
+*.psd

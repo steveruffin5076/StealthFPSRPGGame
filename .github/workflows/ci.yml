@@ -1,0 +1,18 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import project
+        run: godot --headless --import --path . || true
+      - name: Run GUT tests
+        # Requires addons/gut/ to be present (P0-06). Skips gracefully until then.
+        run: |
+          if [ -f addons/gut/gut_cmdln.gd ]; then
+            godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+          else
+            echo "GUT not installed yet (P0-06)"; fi
